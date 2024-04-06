@@ -4,15 +4,29 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/lampguard/osmonitor.git/boostrap"
 	"github.com/lampguard/osmonitor.git/parsers"
 	"github.com/lampguard/osmonitor.git/support"
 	flag "github.com/spf13/pflag"
 )
+
+var base_url = "https://doppler-beta.up.railway.apps/v1"
+
+// var base_url = "http://localhost:3000/v1"
+
+var client *http.Client = &http.Client{
+	Timeout: time.Second * 20,
+}
+
+var config *boostrap.Config
 
 func collateStats() [][]byte {
 	out, err := exec.Command("bash", "-c", "iostat | tail -1").Output()
@@ -45,44 +59,48 @@ func reportStats() {
 		Uptime string `json:"uptime"`
 		DF     string `json:"df"`
 	}
-	stat := collateStats()
-	var stats Stats = Stats{
-		Iostat: string(stat[0]),
-		Uptime: string(stat[1]),
-		DF:     string(stat[2]),
-	}
 
-	jStats, _ := json.Marshal(stats)
-
-	response, err := http.Post("https://doppler-beta.up.railway.app/v1/logs", "application/json", bytes.NewReader(jStats))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer response.Body.Close()
-
-	var p []byte
-
-	fmt.Println("Status:", response.Status)
-	// fmt.Println(response.Body.Read())
-	for i, err := response.Body.Read(p); err == nil; {
-		if i == 0 {
-			break
+	for {
+		stat := collateStats()
+		var stats Stats = Stats{
+			Iostat: string(stat[0]),
+			Uptime: string(stat[1]),
+			DF:     string(stat[2]),
 		}
-		fmt.Println(i)
-		fmt.Println(string(p))
-	}
 
-	// for {
-	// 	time.Sleep(time.Second * 5)
-	// }
+		jStats, _ := json.Marshal(stats)
+
+		request, err := http.NewRequest("POST", fmt.Sprintf("%v/cli/logs", base_url), bytes.NewReader(jStats))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		request.Header.Add("Content-type", "application/json")
+		request.Header.Add("Auth-Token", "")
+		response, err := client.Do(request)
+
+		if err != nil {
+			response.Body.Close()
+			log.Fatal(err)
+		}
+
+		_, err = io.ReadAll(request.Body)
+
+		if err != nil {
+			response.Body.Close()
+			log.Println(err)
+		}
+
+		time.Sleep(time.Second * 5)
+	}
 }
 
 func StartService() {
 	fmt.Println("No command provided starting service")
-	config, err := boostrap.FindConfig()
+	cfg, err := boostrap.FindConfig()
 	boostrap.Check(err)
+
+	config = cfg
 
 	if config.Token == "" {
 		log.Fatal("User not signed in")
@@ -92,13 +110,60 @@ func StartService() {
 }
 
 func Login() {
-	fmt.Println("Logging in")
+	config, err := boostrap.FindConfig()
+	if err != nil {
+		config = &boostrap.Config{
+			Token: "",
+			Email: "",
+		}
+	}
 
 	var email string = support.GetLine(support.Message{
 		Message: "E-mail address: ",
 	})
+	password := support.GetPassword(support.Message{
+		Message: "Password: ",
+	})
 
-	fmt.Println(email)
+	fmt.Println("logging in...")
+
+	resp, err := http.Post(fmt.Sprintf("%s/cli/login", base_url), "application/json", strings.NewReader(fmt.Sprintf(`{"email": "%s", "password": "%s"}`, email, string(password))))
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	var p []byte
+	p, err = io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	type LoginData struct {
+		Status  int    `json:"status"`
+		Message string `json:"message"`
+		Token   string `json:"token"`
+	}
+	loginData := &LoginData{}
+
+	err = json.Unmarshal(p, loginData)
+	if err != nil {
+		panic(err)
+	}
+
+	if loginData.Status != 0 && loginData.Status != 200 {
+		fmt.Println(loginData.Message)
+		return
+	}
+
+	config.Token = loginData.Token
+	config.Email = email
+	configstr, err := json.Marshal(config)
+	if err != nil {
+		panic(err)
+	}
+	os.WriteFile(boostrap.ConfigDir, configstr, 0666)
+	fmt.Println("Login suceeded")
 }
 
 func main() {

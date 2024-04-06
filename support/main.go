@@ -3,8 +3,11 @@ package support
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 type Message struct {
@@ -44,7 +47,16 @@ func GetInt(message Message) int {
 		panic(err)
 	}
 	return i
+}
 
+func GetPassword(message Message) []byte {
+	printMessage(message)
+	password, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+
+	return password
 }
 
 func GetToken(email string) string {

@@ -15,7 +15,9 @@ type Config struct {
 	Token string `json:"token"`
 }
 
-func FindConfig() (Config, error) {
+var ConfigDir string
+
+func FindConfig() (*Config, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatal(err)
@@ -25,6 +27,7 @@ func FindConfig() (Config, error) {
 		log.Fatal(err)
 	}
 
+	ConfigDir = dir
 	bufSize := 1024
 
 	config := make([]byte, bufSize)
@@ -37,7 +40,7 @@ func FindConfig() (Config, error) {
 		// if err != nil {
 		// 	log.Fatal(err)
 		// }
-		return Config{}, errors.New("please run with 'init' or 'login' to login")
+		return &Config{}, errors.New("please run with 'init' or 'login' to login")
 	}
 	Check(err)
 	defer file.Close()
@@ -57,7 +60,7 @@ func FindConfig() (Config, error) {
 	err = json.Unmarshal([]byte(actualConfig), &data)
 	Check(err)
 
-	return data, err
+	return &data, err
 }
 
 func Check(e error) {
