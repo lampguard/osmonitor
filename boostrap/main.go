@@ -2,6 +2,8 @@ package boostrap
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,7 +16,11 @@ type Config struct {
 }
 
 func FindConfig() (Config, error) {
-	dir, err := filepath.Abs("./conf.json")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	dir, err := filepath.Abs(fmt.Sprintf("%v/.osmonitor/conf.json", home))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,7 +28,17 @@ func FindConfig() (Config, error) {
 	bufSize := 1024
 
 	config := make([]byte, bufSize)
-	file, err := os.OpenFile(dir, os.O_RDWR|os.O_CREATE, 0666)
+	file, err := os.OpenFile(dir, os.O_RDWR, 0666)
+	if err != nil {
+		// exec.Command("bash", "-c", fmt.Sprintf("mkdir -p %s/.osmonitor", home)).Output()
+
+		// 2nd pass
+		// file, err = os.OpenFile(dir, os.O_RDWR|os.O_CREATE, 0666)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		return Config{}, errors.New("please run with 'init' or 'login' to login")
+	}
 	Check(err)
 	defer file.Close()
 
@@ -37,10 +53,7 @@ func FindConfig() (Config, error) {
 	Check(err)
 	actualConfig := string(strings.Split(string(configStr), string('\x00'))[0])
 
-	var data struct {
-		Email string `json:"email"`
-		Token string `json:"token"`
-	}
+	var data Config
 	err = json.Unmarshal([]byte(actualConfig), &data)
 	Check(err)
 
