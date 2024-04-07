@@ -1,15 +1,11 @@
 [Unit]
-Description=Lampguard Arch Monitor (e.g., My Awesome Service)
+Description=Lampguard OSMonitor
 After=network.target
 
 [Service]
-User=lampguard  # Replace with the user under which the service should run
-Group=staff  # Replace with the group under which the service should run
-WorkingDirectory=/usr/lib/osmonitor  # Replace with your app's directory
-ExecStart=/usr/bin/osmonitor  # Replace with the path to your compiled binary
-Restart=on-failure  # Restart strategy (consider using 'on-abort' for unexpected exits)
-StandardOutput=syslog:your_app_name  # Redirect logs to systemd journal
-StandardError=syslog:your_app_name  # Redirect errors to systemd journal
+ExecStart=/usr/local/bin/osmonitor
+Restart=on-failure
+WorkingDirectory=/opt/osmonitor
 
 [Install]
-WantedBy=multi-user.target  # Enable service for multi-user mode
+WantedBy=multi-user.target
