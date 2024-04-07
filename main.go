@@ -12,15 +12,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lampguard/osmonitor.git/boostrap"
-	"github.com/lampguard/osmonitor.git/parsers"
-	"github.com/lampguard/osmonitor.git/support"
+	"github.com/lampguard/osmonitor/boostrap"
+	"github.com/lampguard/osmonitor/parsers"
+	"github.com/lampguard/osmonitor/support"
 	flag "github.com/spf13/pflag"
 )
 
-var base_url = "https://doppler-beta.up.railway.apps/v1"
+// var base_url = "https://doppler-beta.up.railway.app/v1"
 
-// var base_url = "http://localhost:3000/v1"
+var base_url = "http://localhost:3000/v1"
 
 var client *http.Client = &http.Client{
 	Timeout: time.Second * 20,
@@ -80,17 +80,16 @@ func reportStats() {
 		response, err := client.Do(request)
 
 		if err != nil {
-			response.Body.Close()
 			log.Fatal(err)
 		}
 
 		_, err = io.ReadAll(request.Body)
 
 		if err != nil {
-			response.Body.Close()
 			log.Println(err)
 		}
 
+		response.Body.Close()
 		time.Sleep(time.Second * 5)
 	}
 }

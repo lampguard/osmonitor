@@ -1,4 +1,4 @@
-module github.com/lampguard/osmonitor.git
+module github.com/lampguard/osmonitor
 
 go 1.21.4
 
