@@ -1,5 +1,5 @@
-# build:
-# 	go build -o build/osmonitor main.go
-# 	./copy-service-file.sh
+build:
+	go build -o build/osmonitor main.go
+	./copy-service-file.sh
 
-# .PHONY: build
+.PHONY: build
