@@ -1,5 +1,6 @@
 build:
-	go build -o build/osmonitor main.go
+	go build -o RELEASE/osmonitor main.go
 	./copy-service-file.sh
+	cp install.sh RELEASE/install.sh
 
 .PHONY: build

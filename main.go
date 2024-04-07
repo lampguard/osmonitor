@@ -18,9 +18,9 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-// var base_url = "https://doppler-beta.up.railway.app/v1"
+var base_url = "https://doppler-beta.up.railway.app/v1"
 
-var base_url = "http://localhost:3000/v1"
+// var base_url = "http://localhost:3000/v1"
 
 var client *http.Client = &http.Client{
 	Timeout: time.Second * 20,

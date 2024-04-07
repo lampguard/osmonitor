@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cp osmonitor.service
+cp osmonitor.service RELEASE/osmonitor.service
